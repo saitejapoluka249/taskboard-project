@@ -1,0 +1,17 @@
+{
+  "columns": [
+    "To Do",
+    "In Progress",
+    "Done"
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Sai",
+      "description": "wefugr",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-26",
+      "columnName": "To Do"
+    }
+  ]
+}

@@ -1,18 +1,3 @@
-//plugins {
-//    id 'java'
-//    id 'application'
-//}
-//
-//group = 'com.taskboard'
-//version = '1.0-SNAPSHOT'
-//
-//repositories {
-//    mavenCentral()
-//}
-//
-//application {
-//    mainClass = 'com.taskboard.app.TaskBoardApp'
-//}
 plugins {
     id 'java'
     id 'application'
