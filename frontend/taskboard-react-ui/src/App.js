@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
-import { apiCreateTask, apiMoveTask, apiFetchTasks, apiDeleteTask } from "./api";
+import { apiCreateTask, apiMoveTask, apiFetchTasks, apiDeleteTask} from "./api";
 
 const EMPTY_COLUMNS = {
     todo: {
@@ -104,14 +104,14 @@ function App() {
         }
     };
 
-    const handleDrop = (event, targetColumnId) => {
+    // 1. Ensure the function is 'async'
+    const handleDrop = async (event, targetColumnId) => {
         event.preventDefault();
         const taskId = event.dataTransfer.getData("text/plain");
         if (!taskId) return;
 
         setColumns((prev) => {
             let sourceColumnId = null;
-
             for (const colId of Object.keys(prev)) {
                 if (prev[colId].taskIds.includes(taskId)) {
                     sourceColumnId = colId;
@@ -125,6 +125,7 @@ function App() {
 
             const newColumns = { ...prev };
 
+            // Remove from old column
             newColumns[sourceColumnId] = {
                 ...newColumns[sourceColumnId],
                 taskIds: newColumns[sourceColumnId].taskIds.filter(
@@ -132,8 +133,7 @@ function App() {
                 ),
             };
 
-            if (!newColumns[targetColumnId]) return prev;
-
+            // Add to new column (Appends to end)
             newColumns[targetColumnId] = {
                 ...newColumns[targetColumnId],
                 taskIds: [...newColumns[targetColumnId].taskIds, taskId],
@@ -142,11 +142,16 @@ function App() {
             return newColumns;
         });
 
-        // persist move in backend (id is numeric in Java, but here it's a string, so backend will parse int)
-        apiMoveTask(taskId, targetColumnId).catch((e) => {
+        try {
+            await apiMoveTask(taskId, targetColumnId);
+
+            await loadTasksFromBackend();
+
+        } catch (e) {
             console.error("Failed to move task", e);
-            // Optional: you could reload from backend or revert state here
-        });
+            // If error, reload to revert UI
+            await loadTasksFromBackend();
+        }
     };
 
     const handleAddTask = async (event) => {
@@ -181,7 +186,6 @@ function App() {
             setError(e.message || "Failed to create task");
         }
     };
-
     return (
         <div className="app">
             <header className="app-header">

@@ -7,6 +7,10 @@ import com.taskboard.model.Board;
 import com.taskboard.model.Column;
 import com.taskboard.model.Priority;
 import com.taskboard.model.Task;
+import com.taskboard.state.DoneState;
+import com.taskboard.state.InProgressState;
+import com.taskboard.state.ToDoState;
+import com.taskboard.state.TaskState;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -82,68 +86,62 @@ public class FileBoardRepository implements BoardRepository {
 
     private Board createDefaultBoard() {
         Board board = new Board();
-        Column todo = new Column("To Do");
-        Column inProgress = new Column("In Progress");
-        Column done = new Column("Done");
-        board.addColumn(todo);
-        board.addColumn(inProgress);
-        board.addColumn(done);
+        // Use lowercase IDs exactly like Frontend
+        board.addColumn(new Column("todo"));
+        board.addColumn(new Column("in-progress"));
+        board.addColumn(new Column("done"));
         return board;
     }
-
     private Board fromJson(BoardJson json) {
         Board board = new Board();
 
-        // Create columns from names
-        Map<String, Column> colByName = new LinkedHashMap<>();
-        if (json.columns != null && !json.columns.isEmpty()) {
-            for (String name : json.columns) {
-                Column c = new Column(name);
-                board.addColumn(c);
-                colByName.put(name, c);
-            }
-        } else {
-            // Fallback to default if no columns listed
+        Map<String, Column> colByName = new HashMap<>();
+
+        // Handle empty file case
+        if (json.columns == null || json.columns.isEmpty()) {
             return createDefaultBoard();
+        }
+
+        // Create columns (expecting "todo", "in-progress", "done" from JSON)
+        for (String name : json.columns) {
+            Column c = new Column(name);
+            board.addColumn(c);
+            colByName.put(name, c);
         }
 
         if (json.tasks != null) {
             for (TaskJson tj : json.tasks) {
-
-                // safely parse priority
+                // Priority/Date parsing (same as before)
                 Priority priority = Priority.MEDIUM;
-                if (tj.priority != null) {
-                    try {
-                        priority = Priority.valueOf(tj.priority);
-                    } catch (IllegalArgumentException ignored) {
-                        // keep MEDIUM if invalid
-                    }
-                }
+                try { if(tj.priority != null) priority = Priority.valueOf(tj.priority); } catch(Exception ignored){}
 
-                // safely parse due date
                 LocalDate dueDate = null;
-                if (tj.dueDate != null && !tj.dueDate.trim().isEmpty()) {
-                    try {
-                        dueDate = LocalDate.parse(tj.dueDate.trim()); // expects YYYY-MM-DD
-                    } catch (Exception ignored) {
-                        // leave null if invalid
-                    }
+                try { if(tj.dueDate != null) dueDate = LocalDate.parse(tj.dueDate); } catch(Exception ignored){}
+
+                // 3. Simple State Switching (Exact match)
+                TaskState state;
+                String colName = tj.columnName != null ? tj.columnName : "todo";
+
+                switch (colName) {
+                    case "in-progress":
+                        state = new InProgressState();
+                        break;
+                    case "done":
+                        state = new DoneState();
+                        break;
+                    case "todo":
+                    default:
+                        state = new ToDoState();
+                        break;
                 }
 
-                // ✅ use the 5-arg constructor, ID included
-                Task t = new Task(
-                        tj.id,           // id
-                        tj.title,        // title
-                        tj.description,  // description
-                        priority,        // priority
-                        dueDate          // due date (can be null)
-                );
+                Task t = new Task(tj.id, tj.title, tj.description, priority, dueDate, state);
 
-                Column col = colByName.getOrDefault(tj.columnName, colByName.get("To Do"));
+                Column col = colByName.get(colName);
+                if (col == null) col = board.getColumns().get(0);
                 col.addTask(t);
             }
         }
-
         return board;
     }
 

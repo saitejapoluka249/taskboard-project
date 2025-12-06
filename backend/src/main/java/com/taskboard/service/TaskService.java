@@ -11,6 +11,10 @@ import com.taskboard.model.Priority;
 import com.taskboard.model.Task;
 import com.taskboard.observer.BoardListener;
 import com.taskboard.repository.BoardRepository;
+import com.taskboard.state.DoneState;
+import com.taskboard.state.InProgressState;
+import com.taskboard.state.TaskState;
+import com.taskboard.state.ToDoState;
 import com.taskboard.strategy.TaskSortStrategy;
 
 public class TaskService {
@@ -41,23 +45,38 @@ public class TaskService {
     public void setSortStrategy(TaskSortStrategy sortStrategy) {
         this.sortStrategy = sortStrategy;
     }
+    public void addTask(String title, String description, Priority priority, LocalDate dueDate, String columnName) {
+        TaskState initialState;
+        String targetColumnName;
 
-    public void addTask(String title, String description, Priority priority, LocalDate dueDate) {
-        Task task = taskFactory.createTask(title, description, priority, dueDate);
-        Column todo = board.getColumnByName("To Do");
-        if (todo == null) {
-            // if columns are missing, create default columns
-            Column c1 = new Column("To Do");
-            Column c2 = new Column("In Progress");
-            Column c3 = new Column("Done");
-            board.addColumn(c1);
-            board.addColumn(c2);
-            board.addColumn(c3);
-            todo = c1;
+        if ("done".equals(columnName)) {
+            initialState = new DoneState();
+            targetColumnName = "done";
+        } else if ("in-progress".equals(columnName)) {
+            initialState = new InProgressState();
+            targetColumnName = "in-progress";
+        } else {
+            initialState = new ToDoState();
+            targetColumnName = "todo";
         }
-        todo.addTask(task);
-        for (BoardListener l : listeners) {
-            l.onTaskAdded(task, todo);
+
+        Task task = taskFactory.createTask(title, description, priority, dueDate, initialState);
+        Column targetColumn = board.getColumnByName(targetColumnName);
+
+        if (targetColumn == null) {
+            // Re-create defaults with LOWERCASE names if missing
+            board.addColumn(new Column("todo"));
+            board.addColumn(new Column("in-progress"));
+            board.addColumn(new Column("done"));
+            targetColumn = board.getColumnByName(targetColumnName);
+        }
+
+        if (targetColumn != null) {
+            targetColumn.addTask(task);
+            System.out.println("[TaskService] Added Task #" + task.getId() + " | State: " + task.getState().getName());
+            for (BoardListener l : listeners) {
+                l.onTaskAdded(task, targetColumn);
+            }
         }
     }
 
@@ -77,8 +96,14 @@ public class TaskService {
             System.out.println("Task already in that column.");
             return;
         }
+
+        task.getState().move(task, targetColumnName);
+
+        // Physical Move
         from.removeTask(task);
         to.addTask(task);
+        System.out.println("[TaskService] Moved Task #" + taskId + " New State: " + task.getState().getName());
+
         for (BoardListener l : listeners) {
             l.onTaskMoved(task, from, to);
         }

@@ -1,14 +1,13 @@
 package com.taskboard.command;
 
+import com.taskboard.factory.TaskFactory;
 import com.taskboard.model.Priority;
 import com.taskboard.service.TaskService;
 import com.taskboard.repository.BoardRepository;
-import com.taskboard.model.Column;
-import com.taskboard.model.Board; // Added this import
+import com.taskboard.model.Board;
+import com.taskboard.strategy.SortByPriorityStrategy;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,20 +17,24 @@ class CommandTests {
     @Test
     void testAddTaskCommand() {
         StubTaskService service = new StubTaskService();
-        AddTaskCommand command = new AddTaskCommand("Task Api Submit", "SWE Work", Priority.HIGH, LocalDate.now());
+        // Updated: AddTaskCommand now requires the columnId ("todo")
+        AddTaskCommand command = new AddTaskCommand("Task Api Submit", "SWE Work", Priority.HIGH, LocalDate.now(), "todo");
+
         command.execute(service);
+
         assertTrue(service.addCalled, "Service.addTask should have been called");
         assertEquals("Task Api Submit", service.lastTitle);
+        assertEquals("todo", service.lastColumn); // Verify column
     }
 
     @Test
     void testMoveTaskCommand() {
         StubTaskService service = new StubTaskService();
-        MoveTaskCommand command = new MoveTaskCommand(101, "Done");
+        MoveTaskCommand command = new MoveTaskCommand(101, "done"); // Use lowercase "done"
         command.execute(service);
         assertTrue(service.moveCalled, "Service.moveTask should have been called");
         assertEquals(101, service.lastId);
-        assertEquals("Done", service.lastColumn);
+        assertEquals("done", service.lastColumn);
     }
 
     @Test
@@ -45,11 +48,11 @@ class CommandTests {
 
     // --- INTERNAL HELPER CLASSES ---
 
-    // 1. Fake Repository (Updated to use Board object)
+    // 1. Fake Repository
     static class FakeRepository implements BoardRepository {
         @Override
         public Board loadBoard() {
-            return new Board(); // Return a new Board object
+            return new Board();
         }
 
         @Override
@@ -68,14 +71,16 @@ class CommandTests {
         public String lastColumn;
 
         public StubTaskService() {
-            // Pass the FakeRepository
-            super(new FakeRepository(), null, null);
+            // Updated: Pass real Strategy and Factory to super() to avoid NullPointerException
+            super(new FakeRepository(), new SortByPriorityStrategy(), new TaskFactory());
         }
 
         @Override
-        public void addTask(String title, String description, Priority priority, LocalDate dueDate) {
+        // Updated: match the real TaskService.addTask signature (includes columnName)
+        public void addTask(String title, String description, Priority priority, LocalDate dueDate, String columnName) {
             this.addCalled = true;
             this.lastTitle = title;
+            this.lastColumn = columnName;
         }
 
         @Override

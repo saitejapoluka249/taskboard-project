@@ -1,17 +1,73 @@
 {
   "columns": [
-    "To Do",
-    "In Progress",
-    "Done"
+    "todo",
+    "in-progress",
+    "done"
   ],
   "tasks": [
     {
-      "id": 1,
-      "title": "Sai",
-      "description": "wefugr",
+      "id": 5,
+      "title": "weiuglfiuw4 2",
+      "description": "sjhkjy 2",
       "priority": "MEDIUM",
-      "dueDate": "2025-12-26",
-      "columnName": "To Do"
+      "dueDate": "2025-12-18",
+      "columnName": "todo"
+    },
+    {
+      "id": 11,
+      "title": "weuigew new date",
+      "description": "weuglugwegui",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-10",
+      "columnName": "todo"
+    },
+    {
+      "id": 8,
+      "title": "Critical bug fix: Pipeline fail",
+      "description": "",
+      "priority": "HIGH",
+      "dueDate": "2026-01-02",
+      "columnName": "todo"
+    },
+    {
+      "id": 9,
+      "title": "Sai check",
+      "description": "wek.ew",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-11",
+      "columnName": "todo"
+    },
+    {
+      "id": 4,
+      "title": "liaugfiue 1",
+      "description": "fwloyf 1",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-03",
+      "columnName": "in-progress"
+    },
+    {
+      "id": 7,
+      "title": "wejhfg 4",
+      "description": "4",
+      "priority": "HIGH",
+      "dueDate": "2025-12-25",
+      "columnName": "in-progress"
+    },
+    {
+      "id": 6,
+      "title": "uslfgiuy 3",
+      "description": "seuilgewgu 3",
+      "priority": "MEDIUM",
+      "dueDate": "2026-01-09",
+      "columnName": "done"
+    },
+    {
+      "id": 10,
+      "title": "iwufe",
+      "description": "qerfogu;er",
+      "priority": "HIGH",
+      "dueDate": "2025-12-01",
+      "columnName": "done"
     }
   ]
 }

@@ -1,14 +1,20 @@
 package com.taskboard.app;
 
 import com.google.gson.Gson;
+import com.taskboard.command.AddTaskCommand;
+import com.taskboard.command.Command;
+import com.taskboard.command.DeleteTaskCommand;
+import com.taskboard.command.MoveTaskCommand;
 import com.taskboard.factory.TaskFactory;
 import com.taskboard.model.Priority;
 import com.taskboard.model.Column;
 import com.taskboard.model.Task;
+import com.taskboard.observer.ConsoleBoardListener;
 import com.taskboard.repository.BoardRepository;
 import com.taskboard.repository.FileBoardRepository;
 import com.taskboard.service.TaskService;
 import com.taskboard.strategy.SortByPriorityStrategy;
+import com.taskboard.strategy.SortByDueDateStrategy;
 import com.taskboard.strategy.TaskSortStrategy;
 
 import spark.Request;
@@ -50,6 +56,7 @@ public class TaskBoardHttpApp {
         TaskSortStrategy sortStrategy = new SortByPriorityStrategy();
         TaskFactory factory = new TaskFactory();
         TaskService service = new TaskService(repository, sortStrategy, factory);
+        service.addListener(new ConsoleBoardListener());
 
         Gson gson = new Gson();
 
@@ -109,8 +116,9 @@ public class TaskBoardHttpApp {
                     // leave null
                 }
             }
-
-            service.addTask(body.title.trim(), body.description, pr, due);
+            String columnId = body.columnId;
+            Command addCmd = new AddTaskCommand(body.title.trim(), body.description, pr, due, columnId);
+            addCmd.execute(service);
             service.saveBoard();
 
             res.status(201);
@@ -121,21 +129,14 @@ public class TaskBoardHttpApp {
         // 🔹 PUT: Move Task
         put("/api/tasks/:id", (Request req, Response res) -> {
             String idStr = req.params(":id");
-            System.out.println("Received PUT /api/tasks/" + idStr);
-
             try {
                 int id = Integer.parseInt(idStr);
                 UpdateTaskRequest body = gson.fromJson(req.body(), UpdateTaskRequest.class);
 
                 if (body != null && body.columnId != null) {
-                    String columnName;
-                    switch (body.columnId.trim()) {
-                        case "todo": columnName = "To Do"; break;
-                        case "in-progress": columnName = "In Progress"; break;
-                        case "done": columnName = "Done"; break;
-                        default: columnName = body.columnId.trim(); break;
-                    }
-                    service.moveTask(id, columnName);
+                    // NO MAPPING NEEDED! Frontend sends "todo", Service expects "todo".
+                    Command moveCmd = new MoveTaskCommand(id, body.columnId.trim());
+                    moveCmd.execute(service);
                     service.saveBoard();
                 }
                 res.status(200);
@@ -146,32 +147,18 @@ public class TaskBoardHttpApp {
             return "{\"status\": \"updated\"}";
         });
 
-        // 🔹 GET: List all tasks as JSON (or [] if empty)
+        // 🔹 GET: List all tasks
         get("/api/tasks", (req, res) -> {
-            System.out.println("Handling GET /api/tasks");
-
             List<Column> columns = service.getColumns();
             List<TaskResponse> result = new ArrayList<>();
 
             if (columns != null) {
                 for (Column col : columns) {
-                    String columnId;
-                    switch (col.getName()) {
-                        case "To Do":
-                            columnId = "todo";
-                            break;
-                        case "In Progress":
-                            columnId = "in-progress";
-                            break;
-                        case "Done":
-                            columnId = "done";
-                            break;
-                        default:
-                            columnId = col.getName().toLowerCase().replace(" ", "-");
-                            break;
-                    }
+                    // NO MAPPING NEEDED! Column name is already "todo", "in-progress", etc.
+                    String columnId = col.getName();
+                    List<Task> sortedTasks = service.getTasksForColumn(col.getName());
 
-                    for (Task t : col.getTasks()) {
+                    for (Task t : sortedTasks) {
                         TaskResponse dto = new TaskResponse();
                         dto.id = t.getId();
                         dto.title = t.getTitle();
@@ -183,9 +170,8 @@ public class TaskBoardHttpApp {
                     }
                 }
             }
-
             res.type("application/json");
-            return gson.toJson(result); // [] if no tasks
+            return gson.toJson(result);
         });
 
         // DELETE: Delete Task
@@ -197,7 +183,8 @@ public class TaskBoardHttpApp {
                 int id = Integer.parseInt(idStr);
 
                 // uses your existing TaskService method
-                service.deleteTask(id);
+                Command deleteCmd = new DeleteTaskCommand(id);
+                deleteCmd.execute(service);
                 service.saveBoard();
 
                 res.status(200);
@@ -210,6 +197,23 @@ public class TaskBoardHttpApp {
             }
         });
 
+        // 🔹 PUT: Switch Sort Strategy
+        // Usage: PUT http://localhost:9090/api/sort/date
+        put("/api/sort/:type", (req, res) -> {
+            String type = req.params(":type");
+
+            if ("date".equalsIgnoreCase(type)) {
+                service.setSortStrategy(new SortByDueDateStrategy());
+                System.out.println("Switched sorting to: Due Date");
+            } else {
+                service.setSortStrategy(new SortByPriorityStrategy());
+                System.out.println("Switched sorting to: Priority");
+            }
+
+            res.status(200);
+            res.type("application/json");
+            return "{\"status\": \"strategy_changed\", \"current\": \"" + type + "\"}";
+        });
 
         System.out.println("TaskBoard HTTP API running on http://localhost:9090");
     }

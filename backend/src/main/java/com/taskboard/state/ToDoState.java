@@ -5,18 +5,24 @@ import com.taskboard.model.Task;
 public class ToDoState implements TaskState {
 
     @Override
-    public void start(Task task) {
-        task.setState(new InProgressState());
-    }
-
-    @Override
-    public void complete(Task task) {
-        // cannot complete directly from TODO
-        System.out.println("Cannot mark task as done directly from TODO. Start it first.");
+    public void move(Task task, String targetColumn) {
+        switch (targetColumn) {
+            case "in-progress":
+                task.setState(new InProgressState());
+                break;
+            case "done":
+                task.setState(new DoneState());
+                break;
+            case "todo":
+                System.out.println("Already in todo.");
+                break;
+            default:
+                System.out.println("Unknown target column: " + targetColumn);
+        }
     }
 
     @Override
     public String getName() {
-        return "TODO";
+        return "todo"; // MATCH FRONTEND ID
     }
 }

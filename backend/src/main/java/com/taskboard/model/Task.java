@@ -13,13 +13,13 @@ public class Task {
     private LocalDate dueDate;
     private TaskState state;
 
-    public Task(int id, String title, String description, Priority priority, LocalDate dueDate) {
+    public Task(int id, String title, String description, Priority priority, LocalDate dueDate, TaskState state) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.priority = priority;
         this.dueDate = dueDate;
-        this.state = new ToDoState();
+        this.state = state;
     }
 
     public int getId() {
