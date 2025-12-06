@@ -1,0 +1,31 @@
+package com.taskboard.command;
+
+import java.time.LocalDate;
+
+import com.taskboard.model.Priority;
+import com.taskboard.service.TaskService;
+
+public class AddTaskCommand implements Command {
+
+    private final String title;
+    private final String description;
+    private final Priority priority;
+    private final LocalDate dueDate;
+
+    public AddTaskCommand(String title, String description, Priority priority, LocalDate dueDate) {
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.dueDate = dueDate;
+    }
+
+    @Override
+    public void execute(TaskService service) {
+        service.addTask(title, description, priority, dueDate);
+    }
+
+    @Override
+    public String description() {
+        return "Add task: " + title;
+    }
+}

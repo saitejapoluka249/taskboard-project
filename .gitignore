@@ -1,0 +1,13 @@
+**/.idea/
+**/*.iml
+
+.DS_Store
+
+
+**/.gradle/
+
+**/build/
+**/out/
+
+**/node_modules/
+**/npm-debug.log
