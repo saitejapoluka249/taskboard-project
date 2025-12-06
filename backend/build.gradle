@@ -10,8 +10,15 @@ repositories {
 dependencies {
     implementation 'com.sparkjava:spark-core:2.9.4'
     implementation 'com.google.code.gson:gson:2.11.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
 }
 
 application {
-    mainClass = 'backend.src.com.taskboard.app.TaskBoardHttpApp'
+    mainClass = 'com.taskboard.app.TaskBoardHttpApp'
+}
+
+test {
+    useJUnitPlatform()
 }
