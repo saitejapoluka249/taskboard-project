@@ -17,20 +17,19 @@ class CommandTests {
     @Test
     void testAddTaskCommand() {
         StubTaskService service = new StubTaskService();
-        // Updated: AddTaskCommand now requires the columnId ("todo")
         AddTaskCommand command = new AddTaskCommand("Task Api Submit", "SWE Work", Priority.HIGH, LocalDate.now(), "todo");
 
         command.execute(service);
 
         assertTrue(service.addCalled, "Service.addTask should have been called");
         assertEquals("Task Api Submit", service.lastTitle);
-        assertEquals("todo", service.lastColumn); // Verify column
+        assertEquals("todo", service.lastColumn);
     }
 
     @Test
     void testMoveTaskCommand() {
         StubTaskService service = new StubTaskService();
-        MoveTaskCommand command = new MoveTaskCommand(101, "done"); // Use lowercase "done"
+        MoveTaskCommand command = new MoveTaskCommand(101, "done");
         command.execute(service);
         assertTrue(service.moveCalled, "Service.moveTask should have been called");
         assertEquals(101, service.lastId);
@@ -46,7 +45,6 @@ class CommandTests {
         assertEquals(55, service.lastId);
     }
 
-    // --- INTERNAL HELPER CLASSES ---
 
     // 1. Fake Repository
     static class FakeRepository implements BoardRepository {
@@ -71,12 +69,10 @@ class CommandTests {
         public String lastColumn;
 
         public StubTaskService() {
-            // Updated: Pass real Strategy and Factory to super() to avoid NullPointerException
             super(new FakeRepository(), new SortByPriorityStrategy(), new TaskFactory());
         }
 
         @Override
-        // Updated: match the real TaskService.addTask signature (includes columnName)
         public void addTask(String title, String description, Priority priority, LocalDate dueDate, String columnName) {
             this.addCalled = true;
             this.lastTitle = title;

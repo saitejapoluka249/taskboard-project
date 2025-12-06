@@ -7,10 +7,10 @@ import com.taskboard.state.ToDoState;
 
 public class Task {
     private final int id;
-    private String title;
-    private String description;
-    private Priority priority;
-    private LocalDate dueDate;
+    private final String title;
+    private final String description;
+    private final Priority priority;
+    private final LocalDate dueDate;
     private TaskState state;
 
     public Task(int id, String title, String description, Priority priority, LocalDate dueDate, TaskState state) {
@@ -30,32 +30,16 @@ public class Task {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public Priority getPriority() {
         return priority;
     }
 
-    public void setPriority(Priority priority) {
-        this.priority = priority;
-    }
-
     public LocalDate getDueDate() {
         return dueDate;
-    }
-
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
     }
 
     public TaskState getState() {
@@ -64,10 +48,6 @@ public class Task {
 
     public void setState(TaskState state) {
         this.state = state;
-    }
-
-    public String getStatusName() {
-        return state.getName();
     }
 
     @Override

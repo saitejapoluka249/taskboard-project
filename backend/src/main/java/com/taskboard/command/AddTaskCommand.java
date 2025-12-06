@@ -25,9 +25,4 @@ public class AddTaskCommand implements Command {
     public void execute(TaskService service) {
         service.addTask(title, description, priority, dueDate, targetColumn);
     }
-
-    @Override
-    public String description() {
-        return "Add task: " + title;
-    }
 }

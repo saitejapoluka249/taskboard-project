@@ -3,17 +3,25 @@ package com.taskboard.state;
 import com.taskboard.model.Task;
 
 public class ToDoState implements TaskState {
+    private static final String ID_TODO = "todo";
+    private static final String ID_IN_PROGRESS = "in-progress";
+    private static final String ID_DONE = "done";
 
     @Override
     public void move(Task task, String targetColumn) {
+        if (targetColumn == null) {
+            System.out.println("Unknown target column: null");
+            return;
+        }
+
         switch (targetColumn) {
-            case "in-progress":
+            case ID_IN_PROGRESS:
                 task.setState(new InProgressState());
                 break;
-            case "done":
+            case ID_DONE:
                 task.setState(new DoneState());
                 break;
-            case "todo":
+            case ID_TODO:
                 System.out.println("Already in todo.");
                 break;
             default:
@@ -23,6 +31,6 @@ public class ToDoState implements TaskState {
 
     @Override
     public String getName() {
-        return "todo"; // MATCH FRONTEND ID
+        return ID_TODO;
     }
 }

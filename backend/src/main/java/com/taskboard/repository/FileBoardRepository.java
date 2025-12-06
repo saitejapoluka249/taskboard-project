@@ -17,10 +17,11 @@ import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.util.*;
 
-/**
- * JSON-based repository: persists Board to a JSON file.
- */
 public class FileBoardRepository implements BoardRepository {
+
+    private static final String ID_TODO = "todo";
+    private static final String ID_IN_PROGRESS = "in-progress";
+    private static final String ID_DONE = "done";
 
     private final File file;
     private final Gson gson;
@@ -33,19 +34,18 @@ public class FileBoardRepository implements BoardRepository {
         System.out.println("[FileBoardRepository] Using file: " + file.getAbsolutePath());
     }
 
-    // DTOs used only for JSON representation
     private static class TaskJson {
         int id;
         String title;
         String description;
-        String priority;   // "LOW", "MEDIUM", "HIGH"
-        String dueDate;    // "YYYY-MM-DD" or null
-        String columnName; // "To Do", "In Progress", "Done"
+        String priority;
+        String dueDate;
+        String columnName;
     }
 
     private static class BoardJson {
-        List<String> columns;    // ["To Do", "In Progress", "Done"]
-        List<TaskJson> tasks;    // flat list of tasks
+        List<String> columns;
+        List<TaskJson> tasks;
     }
 
     @Override
@@ -58,6 +58,7 @@ public class FileBoardRepository implements BoardRepository {
         try (Reader reader = new FileReader(file)) {
             Type type = new TypeToken<BoardJson>() {}.getType();
             BoardJson json = gson.fromJson(reader, type);
+
             if (json == null) {
                 return createDefaultBoard();
             }
@@ -82,67 +83,99 @@ public class FileBoardRepository implements BoardRepository {
         System.out.println("[FileBoardRepository] save() finished");
     }
 
-    // ---------- helpers ----------
 
     private Board createDefaultBoard() {
         Board board = new Board();
-        // Use lowercase IDs exactly like Frontend
-        board.addColumn(new Column("todo"));
-        board.addColumn(new Column("in-progress"));
-        board.addColumn(new Column("done"));
+        // Use constants instead of magic strings
+        board.addColumn(new Column(ID_TODO));
+        board.addColumn(new Column(ID_IN_PROGRESS));
+        board.addColumn(new Column(ID_DONE));
         return board;
     }
+
     private Board fromJson(BoardJson json) {
         Board board = new Board();
+        Map<String, Column> colByName = setupColumns(board, json.columns);
+        processTasks(board, json.tasks, colByName);
 
+        return board;
+    }
+
+    private Map<String, Column> setupColumns(Board board, List<String> columnNames) {
         Map<String, Column> colByName = new HashMap<>();
 
-        // Handle empty file case
-        if (json.columns == null || json.columns.isEmpty()) {
-            return createDefaultBoard();
+        if (columnNames == null || columnNames.isEmpty()) {
+            board.addColumn(new Column(ID_TODO));
+            board.addColumn(new Column(ID_IN_PROGRESS));
+            board.addColumn(new Column(ID_DONE));
+            return colByName; // Note: map will be empty, tasks will fallback to default
         }
 
-        // Create columns (expecting "todo", "in-progress", "done" from JSON)
-        for (String name : json.columns) {
-            Column c = new Column(name);
-            board.addColumn(c);
-            colByName.put(name, c);
+        for (String name : columnNames) {
+            Column column = new Column(name);
+            board.addColumn(column);
+            colByName.put(name, column);
         }
+        return colByName;
+    }
 
-        if (json.tasks != null) {
-            for (TaskJson tj : json.tasks) {
-                // Priority/Date parsing (same as before)
-                Priority priority = Priority.MEDIUM;
-                try { if(tj.priority != null) priority = Priority.valueOf(tj.priority); } catch(Exception ignored){}
+    private void processTasks(Board board, List<TaskJson> taskJsons, Map<String, Column> colByName) {
+        if (taskJsons == null) return;
 
-                LocalDate dueDate = null;
-                try { if(tj.dueDate != null) dueDate = LocalDate.parse(tj.dueDate); } catch(Exception ignored){}
+        for (TaskJson taskJson : taskJsons) {
+            Priority priority = parsePriority(taskJson.priority);
+            LocalDate dueDate = parseDueDate(taskJson.dueDate);
+            String colName = taskJson.columnName != null ? taskJson.columnName : ID_TODO;
+            TaskState state = determineState(colName);
 
-                // 3. Simple State Switching (Exact match)
-                TaskState state;
-                String colName = tj.columnName != null ? tj.columnName : "todo";
+            Task task = new Task(
+                    taskJson.id,
+                    taskJson.title,
+                    taskJson.description,
+                    priority,
+                    dueDate,
+                    state
+            );
 
-                switch (colName) {
-                    case "in-progress":
-                        state = new InProgressState();
-                        break;
-                    case "done":
-                        state = new DoneState();
-                        break;
-                    case "todo":
-                    default:
-                        state = new ToDoState();
-                        break;
-                }
+            Column col = colByName.get(colName);
+            if (col == null && !board.getColumns().isEmpty()) {
+                col = board.getColumns().get(0);
+            }
 
-                Task t = new Task(tj.id, tj.title, tj.description, priority, dueDate, state);
-
-                Column col = colByName.get(colName);
-                if (col == null) col = board.getColumns().get(0);
-                col.addTask(t);
+            if (col != null) {
+                col.addTask(task);
             }
         }
-        return board;
+    }
+
+    private Priority parsePriority(String priorityStr) {
+        if (priorityStr == null) return Priority.MEDIUM;
+        try {
+            return Priority.valueOf(priorityStr);
+        } catch (IllegalArgumentException e) {
+            return Priority.MEDIUM;
+        }
+    }
+
+    private LocalDate parseDueDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) return null;
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private TaskState determineState(String colName) {
+        switch (colName) {
+            case ID_IN_PROGRESS:
+                return new InProgressState();
+            case ID_DONE:
+                return new DoneState();
+            case ID_TODO:
+            default:
+                return new ToDoState();
+        }
     }
 
     private BoardJson toJson(Board board) {
@@ -150,17 +183,19 @@ public class FileBoardRepository implements BoardRepository {
         json.columns = new ArrayList<>();
         json.tasks = new ArrayList<>();
 
-        for (Column col : board.getColumns()) {
-            json.columns.add(col.getName());
-            for (Task t : col.getTasks()) {
-                TaskJson tj = new TaskJson();
-                tj.id = t.getId();
-                tj.title = t.getTitle();
-                tj.description = t.getDescription();
-                tj.priority = t.getPriority() != null ? t.getPriority().name() : null;
-                tj.dueDate = t.getDueDate() != null ? t.getDueDate().toString() : null;
-                tj.columnName = col.getName();
-                json.tasks.add(tj);
+        for (Column column : board.getColumns()) {
+            json.columns.add(column.getName());
+
+            for (Task task : column.getTasks()) {
+                TaskJson taskJson = new TaskJson();
+                taskJson.id = task.getId();
+                taskJson.title = task.getTitle();
+                taskJson.description = task.getDescription();
+                taskJson.priority = task.getPriority() != null ? task.getPriority().name() : null;
+                taskJson.dueDate = task.getDueDate() != null ? task.getDueDate().toString() : null;
+                taskJson.columnName = column.getName();
+
+                json.tasks.add(taskJson);
             }
         }
 

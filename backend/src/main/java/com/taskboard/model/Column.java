@@ -28,9 +28,9 @@ public class Column {
     }
 
     public Task findTaskById(int id) {
-        for (Task t : tasks) {
-            if (t.getId() == id) {
-                return t;
+        for (Task task : tasks) {
+            if (task.getId() == id) {
+                return task;
             }
         }
         return null;

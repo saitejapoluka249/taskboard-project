@@ -14,9 +14,4 @@ public class DeleteTaskCommand implements Command {
     public void execute(TaskService service) {
         service.deleteTask(taskId);
     }
-
-    @Override
-    public String description() {
-        return "Delete task " + taskId;
-    }
 }

@@ -6,14 +6,6 @@
   ],
   "tasks": [
     {
-      "id": 5,
-      "title": "weiuglfiuw4 2",
-      "description": "sjhkjy 2",
-      "priority": "MEDIUM",
-      "dueDate": "2025-12-18",
-      "columnName": "todo"
-    },
-    {
       "id": 11,
       "title": "weuigew new date",
       "description": "weuglugwegui",
@@ -38,11 +30,27 @@
       "columnName": "todo"
     },
     {
+      "id": 6,
+      "title": "uslfgiuy 3",
+      "description": "seuilgewgu 3",
+      "priority": "MEDIUM",
+      "dueDate": "2026-01-09",
+      "columnName": "todo"
+    },
+    {
       "id": 4,
       "title": "liaugfiue 1",
       "description": "fwloyf 1",
       "priority": "MEDIUM",
       "dueDate": "2025-12-03",
+      "columnName": "in-progress"
+    },
+    {
+      "id": 5,
+      "title": "weiuglfiuw4 2",
+      "description": "sjhkjy 2",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-18",
       "columnName": "in-progress"
     },
     {
@@ -54,12 +62,12 @@
       "columnName": "in-progress"
     },
     {
-      "id": 6,
-      "title": "uslfgiuy 3",
-      "description": "seuilgewgu 3",
+      "id": 13,
+      "title": "welguierg",
+      "description": "ewg;er",
       "priority": "MEDIUM",
-      "dueDate": "2026-01-09",
-      "columnName": "done"
+      "dueDate": "2025-12-30",
+      "columnName": "in-progress"
     },
     {
       "id": 10,
@@ -67,6 +75,30 @@
       "description": "qerfogu;er",
       "priority": "HIGH",
       "dueDate": "2025-12-01",
+      "columnName": "in-progress"
+    },
+    {
+      "id": 12,
+      "title": "new check man 12",
+      "description": "rure",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-24",
+      "columnName": "done"
+    },
+    {
+      "id": 14,
+      "title": "ewflugei",
+      "description": "vevhgeir",
+      "priority": "HIGH",
+      "dueDate": "2025-12-18",
+      "columnName": "done"
+    },
+    {
+      "id": 15,
+      "title": "ugdfudg new final man",
+      "description": "fw;hiuf",
+      "priority": "MEDIUM",
+      "dueDate": "2025-12-03",
       "columnName": "done"
     }
   ]

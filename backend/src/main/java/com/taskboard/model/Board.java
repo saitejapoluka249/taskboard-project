@@ -15,29 +15,19 @@ public class Board {
     }
 
     public Column getColumnByName(String name) {
-        for (Column c : columns) {
-            if (c.getName().equalsIgnoreCase(name)) {
-                return c;
-            }
-        }
-        return null;
-    }
-
-    public Task findTaskById(int id) {
-        for (Column c : columns) {
-            Task t = c.findTaskById(id);
-            if (t != null) {
-                return t;
+        for (Column col : columns) {
+            if (col.getName().equalsIgnoreCase(name)) {
+                return col;
             }
         }
         return null;
     }
 
     public Column findColumnContainingTask(int id) {
-        for (Column c : columns) {
-            Task t = c.findTaskById(id);
+        for (Column col : columns) {
+            Task t = col.findTaskById(id);
             if (t != null) {
-                return c;
+                return col;
             }
         }
         return null;

@@ -28,7 +28,11 @@ import java.util.List;
 import static spark.Spark.*;
 
 public class TaskBoardHttpApp {
-
+    private static final int PORT = 9090;
+    private static final String DB_FILE = "tasks.json";
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_CREATED = 201;
+    private static final int HTTP_BAD_REQUEST = 400;
     static class CreateTaskRequest {
         public String title;
         public String description;
@@ -45,14 +49,13 @@ public class TaskBoardHttpApp {
         public int id;
         public String title;
         public String description;
-        public String priority;  // "HIGH" | "MEDIUM" | "LOW"
-        public String dueDate;   // "YYYY-MM-DD" or null
-        public String columnId;  // "todo" | "in-progress" | "done"
+        public String priority;
+        public String dueDate;
+        public String columnId;
     }
 
     public static void main(String[] args) {
-        // 1. Setup Service
-        BoardRepository repository = new FileBoardRepository(new File("tasks.json"));
+        BoardRepository repository = new FileBoardRepository(new File(DB_FILE));
         TaskSortStrategy sortStrategy = new SortByPriorityStrategy();
         TaskFactory factory = new TaskFactory();
         TaskService service = new TaskService(repository, sortStrategy, factory);
@@ -61,7 +64,7 @@ public class TaskBoardHttpApp {
         Gson gson = new Gson();
 
         // 2. Configure Port
-        port(9090);
+        port(PORT);
 
         // 3. CORS
         options("/*", (Request req, Response res) -> {
@@ -83,8 +86,6 @@ public class TaskBoardHttpApp {
                     "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
         });
 
-        // 4. Routes
-
         get("/", (req, res) -> "TaskBoard API is running!");
 
         // 🔹 POST: Create Task
@@ -94,7 +95,7 @@ public class TaskBoardHttpApp {
             CreateTaskRequest body = gson.fromJson(req.body(), CreateTaskRequest.class);
 
             if (body == null || body.title == null || body.title.trim().isEmpty()) {
-                res.status(400);
+                res.status(HTTP_BAD_REQUEST);
                 res.type("application/json");
                 return "{\"error\": \"Missing title\"}";
             }
@@ -121,7 +122,7 @@ public class TaskBoardHttpApp {
             addCmd.execute(service);
             service.saveBoard();
 
-            res.status(201);
+            res.status(HTTP_CREATED);
             res.type("application/json");
             return "{\"status\": \"success\"}";
         });
@@ -139,9 +140,9 @@ public class TaskBoardHttpApp {
                     moveCmd.execute(service);
                     service.saveBoard();
                 }
-                res.status(200);
+                res.status(HTTP_OK);
             } catch (NumberFormatException e) {
-                res.status(400);
+                res.status(HTTP_BAD_REQUEST);
             }
             res.type("application/json");
             return "{\"status\": \"updated\"}";
@@ -182,16 +183,15 @@ public class TaskBoardHttpApp {
             try {
                 int id = Integer.parseInt(idStr);
 
-                // uses your existing TaskService method
                 Command deleteCmd = new DeleteTaskCommand(id);
                 deleteCmd.execute(service);
                 service.saveBoard();
 
-                res.status(200);
+                res.status(HTTP_OK);
                 res.type("application/json");
                 return "{\"status\": \"deleted\"}";
             } catch (NumberFormatException e) {
-                res.status(400);
+                res.status(HTTP_BAD_REQUEST);
                 res.type("application/json");
                 return "{\"error\": \"Invalid task id\"}";
             }
@@ -210,7 +210,7 @@ public class TaskBoardHttpApp {
                 System.out.println("Switched sorting to: Priority");
             }
 
-            res.status(200);
+            res.status(HTTP_OK);
             res.type("application/json");
             return "{\"status\": \"strategy_changed\", \"current\": \"" + type + "\"}";
         });

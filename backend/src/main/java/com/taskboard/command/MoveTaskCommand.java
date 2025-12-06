@@ -16,9 +16,4 @@ public class MoveTaskCommand implements Command {
     public void execute(TaskService service) {
         service.moveTask(taskId, targetColumnName);
     }
-
-    @Override
-    public String description() {
-        return "Move task " + taskId + " to " + targetColumnName;
-    }
 }

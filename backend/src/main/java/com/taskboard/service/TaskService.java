@@ -19,6 +19,9 @@ import com.taskboard.strategy.TaskSortStrategy;
 
 public class TaskService {
 
+    private static final String ID_TODO = "todo";
+    private static final String ID_IN_PROGRESS = "in-progress";
+    private static final String ID_DONE = "done";
     private final Board board;
     private final BoardRepository repository;
     private TaskSortStrategy sortStrategy;
@@ -30,10 +33,13 @@ public class TaskService {
         this.sortStrategy = sortStrategy;
         this.taskFactory = factory;
         this.board = repository.loadBoard();
-        // ensure factory counter is ahead of existing tasks
-        for (Column c : board.getColumns()) {
-            for (Task t : c.getTasks()) {
-                factory.updateCounterForExistingId(t.getId());
+        syncFactoryCounter();
+    }
+
+    private void syncFactoryCounter() {
+        for (Column col : board.getColumns()) {
+            for (Task task : col.getTasks()) {
+                taskFactory.updateCounterForExistingId(task.getId());
             }
         }
     }
@@ -46,38 +52,47 @@ public class TaskService {
         this.sortStrategy = sortStrategy;
     }
     public void addTask(String title, String description, Priority priority, LocalDate dueDate, String columnName) {
-        TaskState initialState;
-        String targetColumnName;
-
-        if ("done".equals(columnName)) {
-            initialState = new DoneState();
-            targetColumnName = "done";
-        } else if ("in-progress".equals(columnName)) {
-            initialState = new InProgressState();
-            targetColumnName = "in-progress";
-        } else {
-            initialState = new ToDoState();
-            targetColumnName = "todo";
-        }
+        TaskState initialState = determineInitialState(columnName);
+        String targetColumnId = determineTargetColumnId(columnName);
 
         Task task = taskFactory.createTask(title, description, priority, dueDate, initialState);
-        Column targetColumn = board.getColumnByName(targetColumnName);
 
-        if (targetColumn == null) {
-            // Re-create defaults with LOWERCASE names if missing
-            board.addColumn(new Column("todo"));
-            board.addColumn(new Column("in-progress"));
-            board.addColumn(new Column("done"));
-            targetColumn = board.getColumnByName(targetColumnName);
-        }
+        Column targetColumn = getOrCreateColumn(targetColumnId);
 
         if (targetColumn != null) {
             targetColumn.addTask(task);
             System.out.println("[TaskService] Added Task #" + task.getId() + " | State: " + task.getState().getName());
-            for (BoardListener l : listeners) {
-                l.onTaskAdded(task, targetColumn);
-            }
+            notifyTaskAdded(task, targetColumn);
         }
+    }
+
+    private TaskState determineInitialState(String columnName) {
+        if (ID_DONE.equals(columnName)) {
+            return new DoneState();
+        } else if (ID_IN_PROGRESS.equals(columnName)) {
+            return new InProgressState();
+        } else {
+            return new ToDoState();
+        }
+    }
+
+    private String determineTargetColumnId(String columnName) {
+        if (ID_DONE.equals(columnName)) return ID_DONE;
+        if (ID_IN_PROGRESS.equals(columnName)) return ID_IN_PROGRESS;
+        return ID_TODO;
+    }
+
+    private Column getOrCreateColumn(String targetColumnName) {
+        Column targetColumn = board.getColumnByName(targetColumnName);
+
+        if (targetColumn == null) {
+            // Re-create defaults with LOWERCASE names if missing
+            board.addColumn(new Column(ID_TODO));
+            board.addColumn(new Column(ID_IN_PROGRESS));
+            board.addColumn(new Column(ID_DONE));
+            targetColumn = board.getColumnByName(targetColumnName);
+        }
+        return targetColumn;
     }
 
     public void moveTask(int taskId, String targetColumnName) {
@@ -104,9 +119,7 @@ public class TaskService {
         to.addTask(task);
         System.out.println("[TaskService] Moved Task #" + taskId + " New State: " + task.getState().getName());
 
-        for (BoardListener l : listeners) {
-            l.onTaskMoved(task, from, to);
-        }
+        notifyTaskMoved(task, from, to);
     }
 
     public void deleteTask(int taskId) {
@@ -121,33 +134,7 @@ public class TaskService {
             return;
         }
         from.removeTask(task);
-        for (BoardListener l : listeners) {
-            l.onTaskDeleted(task, from);
-        }
-    }
-
-    public void listTasks(String columnName) {
-        Column column = board.getColumnByName(columnName);
-        if (column == null) {
-            System.out.println("Column not found: " + columnName);
-            return;
-        }
-        List<Task> sorted = sortStrategy.sort(column.getTasks());
-        System.out.println("=== " + column.getName() + " (sorted " + sortStrategy.getName() + ") ===");
-        for (Task t : sorted) {
-            System.out.println(t);
-        }
-    }
-
-    public void listAllTasks() {
-        for (Column col : board.getColumns()) {
-            List<Task> sorted = sortStrategy.sort(col.getTasks());
-            System.out.println("=== " + col.getName() + " (sorted " + sortStrategy.getName() + ") ===");
-            for (Task t : sorted) {
-                System.out.println(t);
-            }
-            System.out.println();
-        }
+        notifyTaskDeleted(task, from);
     }
 
     public void saveBoard() {
@@ -165,10 +152,25 @@ public class TaskService {
         return sortStrategy.sort(column.getTasks());
     }
 
-    /**
-     * Returns all columns on the board.
-     */
     public List<Column> getColumns() {
         return board.getColumns();
+    }
+
+    private void notifyTaskAdded(Task task, Column col) {
+        for (BoardListener l : listeners) {
+            l.onTaskAdded(task, col);
+        }
+    }
+
+    private void notifyTaskMoved(Task task, Column from, Column to) {
+        for (BoardListener l : listeners) {
+            l.onTaskMoved(task, from, to);
+        }
+    }
+
+    private void notifyTaskDeleted(Task task, Column from) {
+        for (BoardListener l : listeners) {
+            l.onTaskDeleted(task, from);
+        }
     }
 }

@@ -1,4 +1,3 @@
-// src/api.ts (or api.js)
 const API_BASE = "http://localhost:9090";
 
 export async function apiCreateTask(task) {
@@ -30,7 +29,6 @@ export async function apiFetchTasks() {
     }
 
     const data = await res.json();
-    // backend returns [] if no tasks, but just to be safe:
     return Array.isArray(data) ? data : [];
 }
 

@@ -12,14 +12,16 @@ import com.taskboard.state.TaskState;
  */
 public class TaskFactory {
 
-    private final AtomicInteger counter = new AtomicInteger(1);
+    private static final int INITIAL_ID_VALUE = 1;
+    private static final int NEXT_ID_OFFSET = 1;
+    private final AtomicInteger counter = new AtomicInteger(INITIAL_ID_VALUE);
 
     public Task createTask(String title, String description, Priority priority, LocalDate dueDate, TaskState state) {
         int id = counter.getAndIncrement();
-        return new Task(id, title, description, priority, dueDate, state); 
+        return new Task(id, title, description, priority, dueDate, state);
     }
 
     public void updateCounterForExistingId(int id) {
-        counter.updateAndGet(curr -> Math.max(curr, id + 1));
+        counter.updateAndGet(currentValue -> Math.max(currentValue, id + NEXT_ID_OFFSET));
     }
 }
